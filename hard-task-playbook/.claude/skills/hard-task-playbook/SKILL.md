@@ -3,10 +3,11 @@ name: hard-task-playbook
 description: >-
   A working method for hard, multi-step engineering tasks: how to decompose a
   problem before touching code, how to verify your own work so your claims are
-  trustworthy, and how to decide what to do next after each step. Use this
-  whenever a task is too large to hold in your head at once, spans many files
-  or systems, has ambiguous requirements, or is the kind of work where a wrong
-  early decision is expensive to unwind. Written for Opus 4.8.
+  trustworthy, and how to decide what to do next after each step. Use this for
+  any nontrivial engineering task — not only the obviously huge ones — and
+  especially when the work spans many files or systems, has ambiguous
+  requirements, runs unattended, or is the kind where a wrong early decision
+  is expensive to unwind. Written for Opus 4.8.
 ---
 
 # Hard Task Playbook
@@ -20,6 +21,14 @@ step from evidence rather than from the plan you wrote before you had any.
 The three sections below are ordered the way the work is ordered, but you will
 cycle through them. Decomposition happens again when verification surprises
 you. That is the method working, not the method failing.
+
+One thing to understand before you start: this method was distilled from the
+working habits of a more capable model, so that you can stand in for it. The
+practical consequence is that the method matters most exactly when a step
+feels skippable. Feeling certain that a fix is right is not a reason to skip
+running it — certainty without evidence is the failure mode these steps exist
+to catch. When in doubt, follow the procedure; when not in doubt, follow it
+anyway.
 
 ## 1. Decomposing the task
 
@@ -63,6 +72,11 @@ you cannot afford surprises.
 Order slices so that irreversible or hard-to-unwind decisions come as late as
 possible, and cheap-to-reverse ones come early. When two orderings are
 otherwise equal, do the one that produces observable evidence sooner.
+
+If you are unsure whether a slice is small enough to verify on its own, it is
+not — cut it in half. An oversized slice costs a debugging session in which
+the failure could be anywhere inside it; a too-small slice costs a minute.
+Err small.
 
 ### Write the plan down, and treat it as disposable
 
@@ -129,9 +143,29 @@ anomalies compound; every later step inherits the error.
 Once the next step is clear, take it. Do not re-read files you have already
 understood, re-litigate decisions already made, or narrate three options when
 you would only ever pick one. If a genuine fork exists, pick the branch you
-would recommend, state the choice and why in one line, and move — reserving
-questions for the user for things only they can decide: scope changes,
-destructive actions, and preferences the code cannot reveal.
+would recommend, state the choice and why in one line, and move.
+
+### Ask only what only the user can answer
+
+You will often be working unattended, where a question is not a quick
+clarification — it is a full stop until someone returns. So before asking,
+run this check:
+
+- **Is the action reversible and within the requested scope?** Then do it.
+  Approval to do the task is approval to take the ordinary steps the task
+  requires.
+- **Is the missing information discoverable** — in the code, the docs, the
+  history, or by running something? Then discover it. "I wasn't sure, so I
+  asked" is not acceptable when the answer was one grep away.
+- **Does the code contradict the task description?** Surface the discrepancy
+  in your report rather than silently picking a side — but keep working on
+  the parts the discrepancy does not touch.
+
+That leaves the things genuinely worth stopping for: permission for
+destructive or outward-facing actions (deleting data, pushing to shared
+branches, publishing, sending), decisions that change the task's scope, and
+preferences that no artifact records. Everything else is yours to decide —
+decide it, note the decision, and keep moving.
 
 ### Change your hypothesis before you change your retry
 
@@ -151,9 +185,15 @@ against it, item by item. Before you finish, audit your own last message: if
 it ends in a plan, a promise, or "next I would…," you are not done — do that
 work now. Conversely, once the end state is met and verified, stop. Do not
 gold-plate, refactor adjacent code nobody asked about, or add features on
-speculation. Finish clean: remove your debug scaffolding, run the checks one
-final time, and report the outcome — including anything you knowingly left
-undone — plainly.
+speculation. Finish clean: remove your debug scaffolding and run the checks
+one final time.
+
+Then write the report for a reader who did not watch you work. Lead with the
+outcome — the one sentence they would ask for if they said "just tell me what
+happened." Follow with what you verified and *how* (which command, which
+flow you drove), then anything you knowingly left undone, unverified, or
+decided on their behalf. Plain sentences, no shorthand you invented
+mid-session. A report the reader has to re-audit has saved no one any time.
 
 ## Quick reference
 
@@ -167,9 +207,12 @@ While working:
 - [ ] Keep the plan written down; edit it when reality disagrees.
 - [ ] Resolve surprises before building on them.
 - [ ] New hypothesis before every retry; back out if looping.
+- [ ] Reversible and in scope → act. Ask only for scope changes,
+      destructive/outward-facing actions, and unrecorded preferences.
 
 Before claiming done:
 - [ ] Exercise the behavior end-to-end, not just tests/type-checks.
 - [ ] Re-run all checks after the final edit.
 - [ ] Check the original end state, item by item.
-- [ ] Report results honestly, including what was not verified.
+- [ ] Lead the report with the outcome; separate verified from unverified;
+      note decisions made on the user's behalf.

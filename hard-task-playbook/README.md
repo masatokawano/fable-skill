@@ -10,8 +10,14 @@ that captures a working method for hard, multi-step engineering tasks:
    bugs before fixing them, and check the observable outcome the user actually
    cares about.
 3. **Decide what's next** — reconcile each new piece of evidence with your
-   mental model, change your hypothesis before retrying, and stop when the
+   mental model, change your hypothesis before retrying, act on anything
+   reversible and in scope rather than stopping to ask, and stop when the
    stated end state is met.
+
+The method is distilled from the working style of a more capable model, so
+that Opus 4.8 can stand in for it when it isn't available — including when
+running unattended. It is written to apply to any nontrivial engineering
+task, not only the obviously large ones.
 
 ## Using the skill
 

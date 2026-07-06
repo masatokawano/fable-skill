@@ -9,6 +9,13 @@ for Opus 4.8 describing how to decompose hard tasks, verify one's own work,
 and decide what to do next. There is no application code — the deliverable is
 the skill and its documentation.
 
+**Why it exists:** the skill distills the working method of a more capable
+model so that Opus 4.8 can stand in for it when it is unavailable — including
+running unattended. Preserve that intent when editing: every instruction must
+be executable as a procedure, without assuming the judgment the stronger
+model would supply. If a rule only works when the reader "knows when it
+applies," rewrite it with an explicit trigger or check.
+
 ## Layout
 
 ```
