@@ -22,6 +22,8 @@ applies," rewrite it with an explicit trigger or check.
 hard-task-playbook/
 ├── CLAUDE.md                                  # this file
 ├── README.md                                  # human-facing overview
+├── docs/
+│   └── design-rationale.md                    # paper-style rationale + evaluation protocol
 └── .claude/
     ├── settings.json                          # shared Claude Code settings
     └── skills/
@@ -53,6 +55,12 @@ as `/hard-task-playbook`.
   material should be folded into one of those sections rather than added as a
   fourth top-level section, unless the methodology itself genuinely grows a
   new phase.
+- **Keep the rationale in sync.** `docs/design-rationale.md` describes the
+  skill's structure (§3.2), design principles (§3.3), and per-mechanism
+  hypotheses (§4). If you add, remove, or restructure a procedure in
+  SKILL.md, update the corresponding rationale sections — and the Appendix A
+  rubric if the change affects what should be measured. Do not add citations
+  to the rationale unless you have verified they exist.
 
 ## Verifying changes
 

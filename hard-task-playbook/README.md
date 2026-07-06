@@ -37,6 +37,7 @@ The skill lives at [`.claude/skills/hard-task-playbook/SKILL.md`](.claude/skills
 | `.claude/skills/hard-task-playbook/SKILL.md` | The skill document itself |
 | `CLAUDE.md` | Instructions for coding agents editing this repo |
 | `.claude/settings.json` | Shared Claude Code settings |
+| `docs/design-rationale.md` | Paper-style design rationale: purpose, mechanisms, literature grounding, and a falsifiable evaluation protocol |
 
 ## Contributing
 
