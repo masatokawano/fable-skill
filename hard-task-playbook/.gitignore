@@ -1,0 +1,8 @@
+# Local, per-user Claude Code settings (shared settings live in settings.json)
+.claude/settings.local.json
+
+# Editor and OS droppings
+.DS_Store
+*.swp
+.idea/
+.vscode/
