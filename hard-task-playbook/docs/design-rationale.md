@@ -190,7 +190,8 @@ scannable form of its own content.
 | `CLAUDE.md` | Meta-documentation for agents *editing this repository*: records the stand-in intent and the editing rule that every instruction must carry an explicit trigger (§3.3), so future edits do not erode the mechanism. |
 | `README.md` | Human-facing statement of purpose and installation. |
 | `.claude/settings.json` | Harness settings; allowlists the read-only commands the repo's own verification steps use. |
-| `docs/design-rationale.md` | This document. |
+| `docs/design-rationale.md` | This document. A Japanese translation is maintained at `design-rationale.ja.md`; the English version is normative. |
+| `eval/` | Skeleton harness for the Section 6 protocol: machine-readable pre-registration, implemented statistics and mechanical trace coding, run-driver stub (see `eval/README.md`). |
 
 ### 3.2 Structure of the skill
 
@@ -331,7 +332,11 @@ the file).
 This section is written to be executable by an independent party without
 access to the authors. Running it constitutes the "scientific verification"
 this document exists to enable. We recommend registering the protocol
-(e.g., OSF) before data collection.
+(e.g., OSF) before data collection. The components of the protocol that can
+be fixed in advance — the pre-registration file, the statistical tests
+(with self-tests), and the mechanical rubric codes — are implemented in
+`../eval/`; a replicator supplies only the model-invocation and
+benchmark-grading layer (`eval/README.md`).
 
 ### 6.1 Predictions
 
