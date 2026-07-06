@@ -91,14 +91,17 @@ def code_mechanical(events):
             max_lines = max(max_lines, cur_lines)
             cur_lines, dirty = 0, False
 
-    # LP: >=3 consecutive same-shape retries (same tool, same primary target).
+    # LP: >=3 consecutive same-shape retries (same tool, same primary
+    # target). Only action tools count — repeated reads of one file are a
+    # normal pattern, not a retry loop.
     def shape(e):
         inp = e.get("input") or {}
         return (e.get("name"),
                 inp.get("file_path") or (inp.get("command", "")[:40]))
     streak, lp = 1, 0
-    tool_events = [e for e in events if e.get("type") == "tool"]
-    for prev, cur in zip(tool_events, tool_events[1:]):
+    action_events = [e for e in events if e.get("type") == "tool"
+                     and e.get("name") in EDIT_TOOLS | {"Bash"}]
+    for prev, cur in zip(action_events, action_events[1:]):
         streak = streak + 1 if shape(prev) == shape(cur) else 1
         if streak >= 3:
             lp = 1
@@ -106,9 +109,47 @@ def code_mechanical(events):
             "SL_max_lines": max_lines, "LP": lp}
 
 
+def self_test():
+    def bash(cmd):
+        return {"type": "tool", "name": "Bash", "input": {"command": cmd}}
+
+    def edit(path):
+        return {"type": "tool", "name": "Edit",
+                "input": {"file_path": path, "new_string": "x\ny"}}
+
+    def read(path):
+        return {"type": "tool", "name": "Read", "input": {"file_path": path}}
+
+    final = {"type": "assistant_final"}
+
+    # Disciplined trajectory: read -> edit -> test -> claim.
+    good = code_mechanical([read("a.py"), edit("a.py"), bash("pytest"), final])
+    assert (good["GT"], good["EV"], good["FR"], good["LP"]) == (1, 1, 1, 0), good
+    assert good["SL_cycles"] == 1 and good["SL_max_lines"] == 2, good
+
+    # Undisciplined: edit first, no verify, 3 identical Bash retries.
+    bad = code_mechanical([edit("b.py"), bash("ls"), bash("ls"), bash("ls"),
+                           final])
+    assert (bad["GT"], bad["EV"], bad["FR"], bad["LP"]) == (0, 0, 0, 1), bad
+
+    # Repeated reads of one file are NOT a loop; verify-after-claim is not EV.
+    r = code_mechanical([read("c.py"), read("c.py"), read("c.py"),
+                         edit("c.py"), final, bash("pytest")])
+    assert (r["LP"], r["EV"], r["FR"]) == (0, 0, 1), r
+
+    # Edit-only trajectory: GT=0, FR=0; no-edit trajectory: GT=1, FR=1.
+    assert code_mechanical([edit("d.py"), final])["FR"] == 0
+    none = code_mechanical([read("e.py"), final])
+    assert (none["GT"], none["FR"]) == (1, 1), none
+    print("self-test OK")
+
+
 def main():
     if len(sys.argv) != 2:
-        sys.exit("usage: rubric.py <results_dir>  ->  coded.csv")
+        sys.exit("usage: rubric.py <results_dir>|--self-test  ->  coded.csv")
+    if sys.argv[1] == "--self-test":
+        self_test()
+        return
     root = pathlib.Path(sys.argv[1])
     rows = []
     for t in sorted(root.glob("*/*/*/transcript.jsonl")):

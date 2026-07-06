@@ -75,8 +75,7 @@ as `/hard-task-playbook`.
   `eval/rubric.py` and `eval/templates/coding_sheet.csv`; changing a code's
   definition requires updating both, and `eval/protocol.yaml` if endpoints
   change. After touching `eval/*.py`, run `python3 eval/analyze.py
-  --self-test` and the synthetic-transcript check described in
-  `eval/README.md`.
+  --self-test` and `python3 eval/rubric.py --self-test`.
 
 ## Verifying changes
 

@@ -12,7 +12,7 @@ that an independent party fills in only the model-invocation layer.
 | --- | --- |
 | `protocol.yaml` | Complete. Machine-readable pre-registration of predictions, conditions, endpoints, and analysis parameters. Freeze (commit) before data collection. |
 | `analyze.py` | **Implemented and self-tested.** Exact McNemar, paired bootstrap CI, Holm–Bonferroni. Run `python3 analyze.py --self-test`. |
-| `rubric.py` | Partially implemented. Mechanical codes (GT, EV, FR, SL, LP) are computed from tool-call logs; judgment codes (RA, RP, NH, AQ, RS, OS, ES) emit `NEEDS_CODER` rows for the human/LLM coding pass. |
+| `rubric.py` | Partially implemented. Mechanical codes (GT, EV, FR, SL, LP) are computed from tool-call logs; judgment codes (RA, RP, NH, AQ, RS, OS, ES) emit `NEEDS_CODER` rows for the human/LLM coding pass. Run `python3 rubric.py --self-test`. |
 | `run_condition.py` | Skeleton. Prepares a workspace with/without the skill and invokes Claude Code headless; the SWE-bench task setup and grading integration are marked `TODO`. |
 | `templates/coding_sheet.csv` | Column template for human coders (Appendix A codes). |
 

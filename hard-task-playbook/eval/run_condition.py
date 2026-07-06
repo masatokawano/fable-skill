@@ -39,7 +39,7 @@ def load_protocol():
     text = (HERE / "protocol.yaml").read_text()
     models = {}
     for line in text.splitlines():
-        s = line.strip()
+        s = line.split("#", 1)[0].strip()  # drop inline comments
         if s.startswith("weaker:"):
             models["weaker"] = s.split(":", 1)[1].strip()
         elif s.startswith("reference:"):
@@ -105,7 +105,11 @@ def main():
     out_dir = HERE / "results" / args.condition / args.task / str(args.run)
     out_dir.mkdir(parents=True, exist_ok=True)
     ws = prepare_workspace(args.task, spec["skill"])
-    prompt = (ws / "TASK.md").read_text()  # written by prepare_workspace TODO
+    task_file = ws / "TASK.md"
+    if not task_file.exists():
+        sys.exit("TASK.md missing: the benchmark-checkout TODO in "
+                 "prepare_workspace() is not implemented yet (see eval/README.md)")
+    prompt = task_file.read_text()
     raw = run_claude(ws, model, prompt, out_dir)
     normalize_transcript(raw, out_dir / "transcript.jsonl")
 

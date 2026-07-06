@@ -58,12 +58,16 @@ def _bootstrap_diffs(pairs, iters=BOOTSTRAP_ITERS, seed=SEED):
     return diffs
 
 
+def _ci_from_diffs(diffs, alpha=ALPHA):
+    n = len(diffs)
+    lo = diffs[int((alpha / 2) * n)]
+    hi = diffs[min(n - 1, int((1 - alpha / 2) * n))]
+    return lo, hi
+
+
 def paired_bootstrap_ci(pairs, iters=BOOTSTRAP_ITERS, alpha=ALPHA, seed=SEED):
     """Percentile CI for mean(b - a) over tasks, resampling tasks."""
-    diffs = _bootstrap_diffs(pairs, iters, seed)
-    lo = diffs[int((alpha / 2) * iters)]
-    hi = diffs[min(iters - 1, int((1 - alpha / 2) * iters))]
-    return lo, hi
+    return _ci_from_diffs(_bootstrap_diffs(pairs, iters, seed), alpha)
 
 
 def bootstrap_p_two_sided(diffs):
@@ -140,11 +144,10 @@ def analyze_secondary(rows):
         if not pairs:
             continue
         diffs = _bootstrap_diffs(pairs)
-        n = BOOTSTRAP_ITERS
         results[code] = {
             "n_tasks": len(pairs),
             "difference": sum(b - a for a, b in pairs) / len(pairs),
-            "bootstrap_95ci": (diffs[int(0.025 * n)], diffs[int(0.975 * n) - 1]),
+            "bootstrap_95ci": _ci_from_diffs(diffs),
             "p_approx": bootstrap_p_two_sided(diffs),
             "predicted_sign": "+" if SECONDARY_CODES[code] > 0 else "-",
         }
