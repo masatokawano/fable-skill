@@ -38,6 +38,8 @@ The skill lives at [`.claude/skills/hard-task-playbook/SKILL.md`](.claude/skills
 | `CLAUDE.md` | Instructions for coding agents editing this repo |
 | `.claude/settings.json` | Shared Claude Code settings |
 | `docs/design-rationale.md` | Paper-style design rationale: purpose, mechanisms, literature grounding, and a falsifiable evaluation protocol |
+| `docs/design-rationale.ja.md` | Japanese translation of the rationale (English version is normative) |
+| `eval/` | Skeleton harness for the evaluation protocol: pre-registration file, implemented statistics and trace coding, run-driver stub |
 
 ## Contributing
 

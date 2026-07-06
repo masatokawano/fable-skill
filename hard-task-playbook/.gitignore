@@ -1,6 +1,11 @@
 # Local, per-user Claude Code settings (shared settings live in settings.json)
 .claude/settings.local.json
 
+# Evaluation outputs (publish via the protocol's data release, not the repo)
+eval/results/
+eval/coded.csv
+__pycache__/
+
 # Editor and OS droppings
 .DS_Store
 *.swp

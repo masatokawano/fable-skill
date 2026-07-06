@@ -23,7 +23,14 @@ hard-task-playbook/
 ├── CLAUDE.md                                  # this file
 ├── README.md                                  # human-facing overview
 ├── docs/
-│   └── design-rationale.md                    # paper-style rationale + evaluation protocol
+│   ├── design-rationale.md                    # paper-style rationale + evaluation protocol (normative)
+│   └── design-rationale.ja.md                 # Japanese translation (follows the English version)
+├── eval/                                      # evaluation-protocol harness (see eval/README.md)
+│   ├── protocol.yaml                          # machine-readable pre-registration
+│   ├── analyze.py                             # implemented statistics (has --self-test)
+│   ├── rubric.py                              # trace coding: mechanical codes implemented
+│   ├── run_condition.py                       # run driver (skeleton; TODOs marked)
+│   └── templates/coding_sheet.csv             # human-coder template
 └── .claude/
     ├── settings.json                          # shared Claude Code settings
     └── skills/
@@ -61,6 +68,15 @@ as `/hard-task-playbook`.
   SKILL.md, update the corresponding rationale sections — and the Appendix A
   rubric if the change affects what should be measured. Do not add citations
   to the rationale unless you have verified they exist.
+- **Translation follows English.** `docs/design-rationale.ja.md` is a
+  translation; the English file is normative. Edit English first, then
+  mirror the change into the translation (references stay English-only).
+- **Rubric changes propagate to code.** Appendix A is implemented in
+  `eval/rubric.py` and `eval/templates/coding_sheet.csv`; changing a code's
+  definition requires updating both, and `eval/protocol.yaml` if endpoints
+  change. After touching `eval/*.py`, run `python3 eval/analyze.py
+  --self-test` and the synthetic-transcript check described in
+  `eval/README.md`.
 
 ## Verifying changes
 

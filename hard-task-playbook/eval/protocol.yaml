@@ -1,0 +1,67 @@
+# Machine-readable pre-registration for the hard-task-playbook evaluation.
+# Normative prose: ../docs/design-rationale.md §6. Freeze before data
+# collection; any post-freeze change must be logged under `amendments`.
+
+version: 1
+frozen: false            # set true (and commit) before collecting data
+amendments: []
+
+artifact:
+  skill_path: ../.claude/skills/hard-task-playbook/SKILL.md
+  skill_git_commit: null  # fill with the commit hash under test
+
+models:
+  weaker: claude-opus-4-8
+  reference: null         # fill with the reference model's API identifier
+  sampling:               # fix and disclose; identical across conditions
+    temperature: null
+    max_thinking: null
+
+tasks:
+  primary:
+    benchmark: SWE-bench Verified
+    n_min: 200
+    selection: random_seeded
+    seed: 20260706
+  secondary:
+    description: >-
+      Curated multi-file feature-addition tasks with held-out acceptance
+      tests; must be published with results.
+    n_min: 30
+
+conditions:
+  C1: {model: weaker, skill: absent}
+  C2: {model: weaker, skill: present}
+  C3: {model: reference, skill: absent}
+  C4: {model: reference, skill: present, optional: true}
+  C5:
+    model: weaker
+    variants: [section1_only, section2_only, section3_only, paraphrase]
+
+runs_per_task: 3
+resolution_rule: majority_over_runs
+unattended: true          # no human interventions mid-run
+
+endpoints:
+  primary:
+    id: P1
+    measure: resolution_rate_difference_C2_minus_C1
+    test: exact_mcnemar_two_sided
+    ci: paired_bootstrap_10000
+    alpha: 0.05
+  secondary:               # Holm-Bonferroni corrected as a family
+    - {id: P2, measure: gain_vs_baseline_failure_type, test: logistic_regression}
+    - {id: P3, measure: C3_minus_C2_noninferiority, delta: 0.05}
+    - {id: P4, measure: behavioral_distance_reduction, test: paired_bootstrap_10000}
+    - {id: P5, measure: sectionwise_ablation_selectivity, test: paired_bootstrap_10000}
+
+trace_coding:
+  source: tool_call_logs_only   # never the model's prose self-description
+  human_sample_fraction: 0.20
+  interrater_min_kappa: 0.70
+  llm_judge_allowed_if_kappa_ge: 0.70
+  rubric: appendix_A_v1
+
+reporting:
+  publish: [trajectories, coded_labels, prompts, harness_version, costs]
+  costs: [tokens_per_condition, wall_clock_per_condition]
