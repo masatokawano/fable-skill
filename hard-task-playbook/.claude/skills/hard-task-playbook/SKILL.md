@@ -7,7 +7,8 @@ description: >-
   any nontrivial engineering task — not only the obviously huge ones — and
   especially when the work spans many files or systems, has ambiguous
   requirements, runs unattended, or is the kind where a wrong early decision
-  is expensive to unwind. Written for Opus 4.8.
+  is expensive to unwind. Skip it only for trivial edits with no runtime
+  surface (typo fixes, one-line comment or doc tweaks). Written for Opus 4.8.
 ---
 
 # Hard Task Playbook
@@ -30,6 +31,13 @@ running it — certainty without evidence is the failure mode these steps exist
 to catch. When in doubt, follow the procedure; when not in doubt, follow it
 anyway.
 
+Scale the ceremony, not the discipline. On a small task the method collapses
+to minutes — read the file, state what done looks like in one line, make the
+change, run it, report — but what is never scaled away is verification by
+execution. If a task is genuinely trivial (no runtime surface at all), the
+skill's description already excludes it; everything else gets at least the
+collapsed form.
+
 ## 1. Decomposing the task
 
 ### Establish ground truth before planning
@@ -45,6 +53,17 @@ auth layer" but "after this change, `make test` passes, login still works when
 I drive it, and no file outside `auth/` imports the old module." If you cannot
 phrase the goal as something you could check, you do not yet understand the
 task — keep reading until you can.
+
+### Know the tree, and leave yourself a way back
+
+Ground truth includes the working tree itself. Run `git status` before you
+touch anything: know whose uncommitted changes are present, and never
+overwrite or revert work you did not author — if someone else's changes are
+in your way, work around them or surface the conflict instead. While you
+work, keep unrelated edits out of the change, and treat each verified
+working state as a checkpoint (commit it, or note the known-good ref) so a
+risky step always has a rollback path that costs one command, not an
+afternoon of reconstruction.
 
 ### Find the load-bearing unknown first
 
@@ -80,8 +99,18 @@ Err small.
 
 ### Write the plan down, and treat it as disposable
 
-Keep a short running plan — a handful of checkboxes, in a scratch file or a
-task list. Its purpose is not to constrain you; it is to make drift visible.
+Keep a short running plan in a scratch file or task list — six lines are
+enough, and each line has a fixed job:
+
+1. **Observed current state** — what you actually saw, not what the prompt said.
+2. **Observable done state** — the end state from the step above.
+3. **Riskiest assumption** — and how you probed (or will probe) it.
+4. **Current slice** — the one piece you are working on now.
+5. **Verification for this slice** — the command you will run or the behavior
+   you will drive.
+6. **Remaining unknowns** — anything you noticed but have not resolved.
+
+The plan's purpose is not to constrain you; it is to make drift visible.
 When step 3 teaches you something that invalidates step 5, edit the plan then
 and there. A plan you are silently ignoring is worse than no plan, because it
 lets you believe you are on track.
@@ -162,10 +191,20 @@ run this check:
   the parts the discrepancy does not touch.
 
 That leaves the things genuinely worth stopping for: permission for
-destructive or outward-facing actions (deleting data, pushing to shared
-branches, publishing, sending), decisions that change the task's scope, and
-preferences that no artifact records. Everything else is yours to decide —
-decide it, note the decision, and keep moving.
+destructive or outward-facing actions, decisions that change the task's
+scope, and preferences that no artifact records. Concretely, always ask
+before:
+
+- deploying to production, or touching production data or config;
+- destructive commands, or deleting/overwriting data you did not create;
+- changing authentication, secrets, or credentials;
+- database migrations;
+- sending data to external services, or anything that publishes;
+- expensive API calls or large batch jobs that incur real cost;
+- pushing to shared branches.
+
+Everything else is yours to decide — decide it, note the decision, and keep
+moving.
 
 ### Change your hypothesis before you change your retry
 
@@ -190,29 +229,39 @@ one final time.
 
 Then write the report for a reader who did not watch you work. Lead with the
 outcome — the one sentence they would ask for if they said "just tell me what
-happened." Follow with what you verified and *how* (which command, which
-flow you drove), then anything you knowingly left undone, unverified, or
-decided on their behalf. Plain sentences, no shorthand you invented
-mid-session. A report the reader has to re-audit has saved no one any time.
+happened." Use this shape:
+
+- **Outcome:** what happened, in one or two plain sentences.
+- **Changed:** what was modified, at the level the reader cares about.
+- **Verified:** what you checked and *how* (which command, which flow you drove).
+- **Not verified:** what you could not or did not check, and why.
+- **Decisions made:** anything you decided on the user's behalf.
+- **Risks / follow-ups:** what could still go wrong, or what comes next.
+
+Plain sentences, no shorthand you invented mid-session. A report the reader
+has to re-audit has saved no one any time.
 
 ## Quick reference
 
 Before starting:
 - [ ] Read the actual code; reproduce the actual problem.
+- [ ] `git status` first; never overwrite work you did not author.
 - [ ] State the goal as an observable end state.
 - [ ] Probe the riskiest assumption first, cheaply.
 - [ ] Slice the work so every slice is independently verifiable.
 
 While working:
-- [ ] Keep the plan written down; edit it when reality disagrees.
+- [ ] Keep the six-line plan written down; edit it when reality disagrees.
+- [ ] Checkpoint each verified working state; keep unrelated edits out.
 - [ ] Resolve surprises before building on them.
 - [ ] New hypothesis before every retry; back out if looping.
-- [ ] Reversible and in scope → act. Ask only for scope changes,
-      destructive/outward-facing actions, and unrecorded preferences.
+- [ ] Reversible and in scope → act. Ask before the listed operations
+      (production, secrets, migrations, external sends, real cost,
+      shared branches), scope changes, and unrecorded preferences.
 
 Before claiming done:
 - [ ] Exercise the behavior end-to-end, not just tests/type-checks.
 - [ ] Re-run all checks after the final edit.
 - [ ] Check the original end state, item by item.
-- [ ] Lead the report with the outcome; separate verified from unverified;
-      note decisions made on the user's behalf.
+- [ ] Report in the fixed shape: outcome, changed, verified, not
+      verified, decisions made, risks/follow-ups.

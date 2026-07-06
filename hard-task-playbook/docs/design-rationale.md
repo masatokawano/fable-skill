@@ -1,7 +1,10 @@
 # Procedural Knowledge Transfer via Skill Documents: Design Rationale and a Falsifiable Evaluation Protocol for the `hard-task-playbook` Skill
 
-**Status:** Design rationale and pre-registrable evaluation protocol, v1.0
-(2026-07-06). This document has not itself been peer reviewed; it is written
+**Status:** Design rationale and pre-registrable evaluation protocol, v1.1
+(2026-07-06). v1.1 incorporates changes to the skill adopted from an
+external model review (checklist and report templates, git discipline, an
+explicit ask-before list, and a proportionality rule; see repository
+history). This document has not itself been peer reviewed; it is written
 *in the form of* a reviewable paper so that its claims can be audited,
 criticized, and empirically tested.
 
@@ -199,10 +202,14 @@ The skill has three procedure sections mirroring the phases of hard-task
 work, plus a preamble and a checklist:
 
 1. **Decomposing the task** — establish ground truth by reading real code
-   before planning; restate the goal as an observable end state; probe the
-   riskiest assumption first with the cheapest experiment; cut work into
-   vertical slices that are each independently verifiable; keep the plan
-   written down and edit it when evidence contradicts it.
+   before planning (including `git status`: never overwrite work the model
+   did not author, keep unrelated edits out, checkpoint verified working
+   states so risky steps have a rollback path); restate the goal as an
+   observable end state; probe the riskiest assumption first with the
+   cheapest experiment; cut work into vertical slices that are each
+   independently verifiable; keep a six-line plan written down (observed
+   state, done state, riskiest assumption, current slice, verification for
+   the slice, remaining unknowns) and edit it when evidence contradicts it.
 2. **Verifying your own work** — treat the diff as a claim, not evidence;
    reproduce bugs before fixing; verify the *claim* at the boundary the
    user cares about, not proxy signals; re-run all checks after the final
@@ -210,9 +217,12 @@ work, plus a preamble and a checklist:
 3. **Deciding what to do next** — reconcile every observation with the
    current model and resolve surprises before building on them; act without
    re-deriving settled facts; a rubric for ask-versus-act under unattended
-   operation; change the hypothesis before every retry and back out when
+   operation, with an explicit ask-before list (production, destructive
+   commands, credentials, migrations, external sends, real cost, shared
+   branches); change the hypothesis before every retry and back out when
    looping; audit against the stated end state before claiming done, and
-   lead the final report with the outcome.
+   deliver the final report in a fixed shape (outcome, changed, verified,
+   not verified, decisions made, risks/follow-ups).
 
 ### 3.3 Design principles
 
@@ -235,10 +245,16 @@ situation the steps exist for. This targets miscalibrated self-assessment
 the exact internal state (confidence) under which the model would otherwise
 deviate, and pre-commits it to the procedure.
 
-**P-c. Broad triggering.** The frontmatter description matches "any
-nontrivial engineering task," not only conspicuously hard ones, because a
-stand-in that activates only when the model already recognizes the task as
-hard would miss the cases where recognition itself is the failure.
+**P-c. Broad triggering, scaled ceremony.** The frontmatter description
+matches "any nontrivial engineering task," not only conspicuously hard
+ones, because a stand-in that activates only when the model already
+recognizes the task as hard would miss the cases where recognition itself
+is the failure. Over-firing on small tasks is handled not by narrowing the
+trigger but by carving out only truly trivial edits (no runtime surface)
+in the description and stating a proportionality rule in the preamble:
+ceremony scales down with the task, execution-based verification never
+does. This preserves the coverage argument while capping the overhead the
+breadth would otherwise impose.
 
 ---
 
