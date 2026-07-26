@@ -5,16 +5,27 @@ Guidance for coding agents (Claude Code) working in this repository.
 ## What this project is
 
 This project packages the **hard-task-playbook** skill: a methodology document
-for Opus 4.8 describing how to decompose hard tasks, verify one's own work,
+for Opus 5 describing how to decompose hard tasks, verify one's own work,
 and decide what to do next. There is no application code — the deliverable is
 the skill and its documentation.
 
 **Why it exists:** the skill distills the working method of a more capable
-model so that Opus 4.8 can stand in for it when it is unavailable — including
+model so that Opus 5 can stand in for it when it is unavailable — including
 running unattended. Preserve that intent when editing: every instruction must
 be executable as a procedure, without assuming the judgment the stronger
 model would supply. If a rule only works when the reader "knows when it
 applies," rewrite it with an explicit trigger or check.
+
+**The hardest rule to keep:** do not add instructions telling the model to
+verify more, re-check, double-check, or delegate verification to a subagent.
+Opus 5 does that natively, and such rules compound into redundant work —
+cost with no quality gain (see the [prompting
+guidance](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5)
+and `docs/design-rationale.md` §3.3 P-b′). Verification rules in this skill
+are *allocative*: which evidence, at which boundary, at which point in the
+edit sequence. If a proposed edit would increase the number of checking
+actions rather than aim them, it does not belong — the same goes for
+loosening the caps on scope, delegation, and output length (§3.3 P-d).
 
 ## Layout
 

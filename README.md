@@ -4,7 +4,7 @@ A [Claude Code](https://code.claude.com/docs) skill project. The single
 sub-project here, [`hard-task-playbook/`](hard-task-playbook/), packages a
 skill that captures a working method for hard, multi-step engineering
 tasks — decomposition, verification, and next-step decision-making — so
-that Claude Opus 4.8 can stand in for a more capable model, including when
+that Claude Opus 5 can stand in for a more capable model, including when
 running unattended.
 
 | Where to start | |

@@ -2,13 +2,14 @@
 name: hard-task-playbook
 description: >-
   A working method for hard, multi-step engineering tasks: how to decompose a
-  problem before touching code, how to verify your own work so your claims are
-  trustworthy, and how to decide what to do next after each step. Use this for
-  any nontrivial engineering task — not only the obviously huge ones — and
-  especially when the work spans many files or systems, has ambiguous
-  requirements, runs unattended, or is the kind where a wrong early decision
-  is expensive to unwind. Skip it only for trivial edits with no runtime
-  surface (typo fixes, one-line comment or doc tweaks). Written for Opus 4.8.
+  problem before touching code, where to aim the verification effort you
+  already spend so your claims are trustworthy, and how to decide what to do
+  next after each step. Use this for any nontrivial engineering task — not
+  only the obviously huge ones — and especially when the work spans many
+  files or systems, has ambiguous requirements, runs unattended, or is the
+  kind where a wrong early decision is expensive to unwind. Skip it only for
+  trivial edits with no runtime surface (typo fixes, one-line comment or doc
+  tweaks). Written for Opus 5.
 ---
 
 # Hard Task Playbook
@@ -23,13 +24,20 @@ The three sections below are ordered the way the work is ordered, but you will
 cycle through them. Decomposition happens again when verification surprises
 you. That is the method working, not the method failing.
 
-One thing to understand before you start: this method was distilled from the
-working habits of a more capable model, so that you can stand in for it. The
-practical consequence is that the method matters most exactly when a step
-feels skippable. Feeling certain that a fix is right is not a reason to skip
-running it — certainty without evidence is the failure mode these steps exist
-to catch. When in doubt, follow the procedure; when not in doubt, follow it
-anyway.
+One thing to understand before you start: this is not an instruction to be
+more careful. You already re-read your work, catch your own mistakes, and
+check what you changed without being told to. Doing more of that is not the
+win available here, and adding passes on top of what you already do costs
+tokens and time without buying accuracy. What this document changes is
+*where the effort lands*: on the right ground truth before you plan, slices
+sized so a failure has one plausible cause, evidence taken at the boundary
+the user actually cares about, a scope that stays the one you were given,
+and a report someone can trust without re-auditing it.
+
+So: no separate verification phase bolted onto the end, and no subagent
+spawned to check your work. Certainty is still not evidence — a fix you are
+sure about is a prediction until you run it — but the answer to that is one
+well-aimed run, not three redundant ones.
 
 Scale the ceremony, not the discipline. On a small task the method collapses
 to minutes — read the file, state what done looks like in one line, make the
@@ -53,6 +61,18 @@ auth layer" but "after this change, `make test` passes, login still works when
 I drive it, and no file outside `auth/` imports the old module." If you cannot
 phrase the goal as something you could check, you do not yet understand the
 task — keep reading until you can.
+
+### Fix the scope at the same time as the goal
+
+The end state you write down is also the scope boundary, and it is worth
+stating what falls *outside* it: the adjacent module you noticed, the
+refactor the code is asking for, the test suite that could be restructured.
+Those are observations for the report, not work. Deliver what was asked, at
+the scope intended — do not quietly narrow it, widen it, or transform it
+into the task you would rather do. If the request looks mistaken or a better
+approach exists, say so in a sentence and continue with the task as asked.
+Where a reading is ambiguous, make the routine call yourself and note it;
+stop to ask only when the readings lead to materially different work.
 
 ### Know the tree, and leave yourself a way back
 
@@ -126,6 +146,12 @@ not that what you meant was right. Evidence comes from **execution**: run the
 tests, drive the affected flow, observe the output. "It should work" is a
 prediction; a passing run you watched is a fact.
 
+This is a rule about the *kind* of evidence, not the amount. Reading the diff
+a second time and re-reading it a third add nothing that the first pass
+missed, and neither does handing the diff to a subagent to inspect. One
+execution against the real behavior settles what any number of re-readings
+cannot.
+
 ### Reproduce before you fix
 
 For any bug: make it fail in front of you before you change anything. The
@@ -144,8 +170,10 @@ boundary the user cares about, in addition to whatever lower-level tests you
 wrote.
 
 Also check what you might have broken: run the surrounding test suite, not
-just the tests you added, and re-run everything once after your **final**
-edit. A verification that predates your last change verifies nothing.
+just the tests you added. Time it as a single pass after your **final** edit
+rather than repeating it after every intermediate one — a verification that
+predates your last change verifies nothing, and one that follows it makes the
+earlier repeats redundant.
 
 ### Report what actually happened
 
@@ -173,6 +201,25 @@ Once the next step is clear, take it. Do not re-read files you have already
 understood, re-litigate decisions already made, or narrate three options when
 you would only ever pick one. If a genuine fork exists, pick the branch you
 would recommend, state the choice and why in one line, and move.
+
+The same economy applies to correcting yourself. Revise an earlier statement
+when the error would change the user's code, conclusions, or decisions —
+plainly, in a sentence, then carry on. For a slip that changes nothing for
+them, make the fix and say nothing about it. A running commentary on your own
+earlier wording spends the reader's attention on your process instead of
+their problem.
+
+### Delegate rarely, and never to check yourself
+
+If subagents are available, they earn their cost only on large tracks of work
+that are genuinely independent and run in parallel — a wide investigation
+across unrelated parts of a codebase, say. Anything you could finish yourself
+in a handful of tool calls is cheaper done yourself: a subagent starts cold,
+re-derives the context you already hold, and reports back through a summary
+that loses detail. Never spawn one to verify, review, or double-check work
+you just did; that is the redundant second pass in a more expensive form.
+When delegation is warranted and one agent can do the job, use one, and keep
+the total count low.
 
 ### Ask only what only the user can answer
 
@@ -217,6 +264,15 @@ one file — zoom out: re-read the relevant code from the top, question the
 assumption all three attempts shared, or back out to the last known-good
 state and re-approach.
 
+### Narrate sparingly while the work is in flight
+
+Someone may be watching you work, but they are watching for the outcome, not
+for a play-by-play. Say in one sentence what you are about to do before your
+first tool call. After that, speak up only when you find something that
+changes the picture — a surprise worth resolving, a decision you made, a
+direction change — and otherwise let the work run. Announcing each step as
+you take it turns a session someone can skim into one they have to read.
+
 ### Know what "done" looks like, and stop there
 
 You wrote the observable end state in step one; ending the task means checking
@@ -224,8 +280,9 @@ against it, item by item. Before you finish, audit your own last message: if
 it ends in a plan, a promise, or "next I would…," you are not done — do that
 work now. Conversely, once the end state is met and verified, stop. Do not
 gold-plate, refactor adjacent code nobody asked about, or add features on
-speculation. Finish clean: remove your debug scaffolding and run the checks
-one final time.
+speculation. Finish clean: remove your debug scaffolding, and remember that
+removing it is itself an edit — the single full check belongs after it, not
+before.
 
 Then write the report for a reader who did not watch you work. Lead with the
 outcome — the one sentence they would ask for if they said "just tell me what
@@ -239,14 +296,19 @@ happened." Use this shape:
 - **Risks / follow-ups:** what could still go wrong, or what comes next.
 
 Plain sentences, no shorthand you invented mid-session. A report the reader
-has to re-audit has saved no one any time.
+has to re-audit has saved no one any time — and so has one they have to mine.
+Each line carries what that line is for and stops; a caveat gets a clause, not
+a paragraph. The same calibration governs anything you write to disk on the
+way (a design note, a summary, a handover document): long enough to cover the
+substance, with no filler sections, restated summaries, or boilerplate
+padding it out.
 
 ## Quick reference
 
 Before starting:
 - [ ] Read the actual code; reproduce the actual problem.
 - [ ] `git status` first; never overwrite work you did not author.
-- [ ] State the goal as an observable end state.
+- [ ] State the goal as an observable end state — and what is outside it.
 - [ ] Probe the riskiest assumption first, cheaply.
 - [ ] Slice the work so every slice is independently verifiable.
 
@@ -258,10 +320,14 @@ While working:
 - [ ] Reversible and in scope → act. Ask before the listed operations
       (production, secrets, migrations, external sends, real cost,
       shared branches), scope changes, and unrecorded preferences.
+- [ ] Subagents only for large independent tracks — never to check your
+      own work; keep the count low.
+- [ ] Speak up on surprises, decisions, and direction changes; skip the
+      step-by-step narration.
 
 Before claiming done:
 - [ ] Exercise the behavior end-to-end, not just tests/type-checks.
-- [ ] Re-run all checks after the final edit.
-- [ ] Check the original end state, item by item.
+- [ ] One full check pass, after the final edit — not after each one.
+- [ ] Check the original end state, item by item; no gold-plating.
 - [ ] Report in the fixed shape: outcome, changed, verified, not
-      verified, decisions made, risks/follow-ups.
+      verified, decisions made, risks/follow-ups — no padding.

@@ -9,6 +9,7 @@ version under test.
 
 Usage:
   python3 run_condition.py --condition C2 --task astropy__astropy-12907 --run 1
+        [--effort high]
 """
 import argparse
 import json
@@ -37,14 +38,18 @@ CONDITIONS = {
 def load_protocol():
     # Minimal YAML read without a dependency: only the flat keys we need.
     text = (HERE / "protocol.yaml").read_text()
-    models = {}
+    models, settings = {}, {}
     for line in text.splitlines():
         s = line.split("#", 1)[0].strip()  # drop inline comments
         if s.startswith("weaker:"):
             models["weaker"] = s.split(":", 1)[1].strip()
         elif s.startswith("reference:"):
             models["reference"] = s.split(":", 1)[1].strip()
-    return models
+        elif s.startswith("effort:"):
+            settings["effort"] = s.split(":", 1)[1].strip()
+        elif s.startswith("thinking:"):
+            settings["thinking"] = s.split(":", 1)[1].strip()
+    return models, settings
 
 
 def prepare_workspace(task_id: str, skill_variant):
@@ -64,11 +69,12 @@ def prepare_workspace(task_id: str, skill_variant):
     return ws
 
 
-def run_claude(ws, model, prompt, out_dir):
+def run_claude(ws, model, effort, prompt, out_dir):
     """Invoke Claude Code headless; capture the event stream."""
     cmd = [
         "claude", "-p", prompt,
         "--model", model,
+        "--effort", effort,                  # fixed across conditions (§6.3)
         "--output-format", "stream-json",
         "--permission-mode", "acceptEdits",  # unattended (§6.3)
     ]
@@ -94,15 +100,27 @@ def main():
     ap.add_argument("--condition", required=True, choices=CONDITIONS)
     ap.add_argument("--task", required=True)
     ap.add_argument("--run", required=True, type=int)
+    ap.add_argument("--effort", choices=["low", "medium", "high", "xhigh"],
+                    help="override models.sampling.effort from protocol.yaml; "
+                         "used for the pre-registered effort sweep")
     args = ap.parse_args()
 
     spec = CONDITIONS[args.condition]
-    models = load_protocol()
+    models, settings = load_protocol()
     model = models.get(spec["model_key"]) or ""
     if not model or model == "null":
         sys.exit(f"set models.{spec['model_key']} in protocol.yaml first")
+    effort = args.effort or settings.get("effort") or "high"
+    if settings.get("thinking", "enabled") != "enabled":
+        # Thinking off is an artifact source (tool calls leaked as text,
+        # internal tags in output) and is not part of the protocol.
+        sys.exit("models.sampling.thinking must stay 'enabled'; lower "
+                 "effort instead if the run budget is the concern")
 
-    out_dir = HERE / "results" / args.condition / args.task / str(args.run)
+    # Sweep runs get their own condition label so the results tree keeps the
+    # <condition>/<task>/<run> shape rubric.py globs for.
+    cond_dir = args.condition + (f"@{effort}" if args.effort else "")
+    out_dir = HERE / "results" / cond_dir / args.task / str(args.run)
     out_dir.mkdir(parents=True, exist_ok=True)
     ws = prepare_workspace(args.task, spec["skill"])
     task_file = ws / "TASK.md"
@@ -110,7 +128,7 @@ def main():
         sys.exit("TASK.md missing: the benchmark-checkout TODO in "
                  "prepare_workspace() is not implemented yet (see eval/README.md)")
     prompt = task_file.read_text()
-    raw = run_claude(ws, model, prompt, out_dir)
+    raw = run_claude(ws, model, effort, prompt, out_dir)
     normalize_transcript(raw, out_dir / "transcript.jsonl")
 
     # TODO(grading): run the benchmark's acceptance tests against `ws` and

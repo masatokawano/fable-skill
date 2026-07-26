@@ -1,10 +1,16 @@
 # Procedural Knowledge Transfer via Skill Documents: Design Rationale and a Falsifiable Evaluation Protocol for the `hard-task-playbook` Skill
 
-**Status:** Design rationale and pre-registrable evaluation protocol, v1.1
-(2026-07-06). v1.1 incorporates changes to the skill adopted from an
+**Status:** Design rationale and pre-registrable evaluation protocol, v1.2
+(2026-07-26). v1.1 incorporated changes to the skill adopted from an
 external model review (checklist and report templates, git discipline, an
 explicit ask-before list, and a proportionality rule; see repository
-history). This document has not itself been peer reviewed; it is written
+history). v1.2 retargets the artifact from Claude Opus 4.8 to Claude Opus 5
+following the published prompting guidance for that model [Anthropic 2026]:
+verification is restated as allocation rather than addition (§3.3 P-b′,
+H2), caps on scope, delegation, and output length are added (§3.3 P-d,
+H5), and cost becomes a pre-registered endpoint (P6) alongside an
+effort sweep and a thinking-enabled requirement in §6.3. This document has
+not itself been peer reviewed; it is written
 *in the form of* a reviewable paper so that its claims can be audited,
 criticized, and empirically tested.
 
@@ -25,12 +31,17 @@ about the artifact's *effect* is therefore stated as a testable prediction
 
 We describe a document system — a Claude Code project skill plus supporting
 agent-facing documentation — whose goal is to let a less capable language
-model (Claude Opus 4.8) approximate the *working method* of a more capable
+model (Claude Opus 5) approximate the *working method* of a more capable
 one (Claude Fable 5) on hard, multi-step software-engineering tasks,
 particularly when operating unattended. The system encodes three families of
 procedure: task decomposition into independently verifiable slices,
 execution-based verification of the model's own work, and evidence-driven
-selection of the next action. We ground each design choice in prior work on
+selection of the next action. Because the target model verifies and
+self-corrects unprompted, the verification family is written to *aim* that
+effort — at the boundary the user cares about, once, after the final edit —
+rather than to add passes on top of it, and the document additionally caps
+the behaviors whose cost scales without bound (scope growth, subagent
+delegation, output length). We ground each design choice in prior work on
 prompted decomposition, execution-feedback self-correction, and agentic
 coding, and we articulate the *theory of change*: that a substantial share
 of the outcome gap between model tiers on agentic tasks is mediated by
@@ -38,7 +49,7 @@ of the outcome gap between model tiers on agentic tasks is mediated by
 completion claims) rather than by knowledge or insight limits, and that
 process failures are the component instructions can move. We state what the
 approach cannot do — instructions do not raise a model's capability ceiling
-[Gudibande et al. 2023] — and derive five falsifiable predictions with a
+[Gudibande et al. 2023] — and derive six falsifiable predictions with a
 concrete evaluation protocol (benchmarks, conditions, trace-coding rubric,
 statistics, ablations) sufficient for independent replication.
 
@@ -51,7 +62,7 @@ statistics, ablations) sufficient for independent replication.
 Frontier model tiers differ in cost and availability. An organization that
 relies on a top-tier model's behavior on hard engineering tasks faces a
 substitution problem when that model is unavailable or uneconomical: the
-next tier down (here, Claude Opus 4.8) completes many of the same tasks, but
+next tier down (here, Claude Opus 5) completes many of the same tasks, but
 fails differently — and, we hypothesize, a large share of the *additional*
 failures are procedural rather than intellectual. Typical procedural
 failure modes observed informally in agentic coding practice include:
@@ -68,6 +79,22 @@ failure modes observed informally in agentic coding practice include:
 None of these failures requires more raw capability to avoid; each is
 avoidable by following a procedure. This suggests a cheap intervention:
 write the procedure down, in the operative context of the weaker model.
+
+The failure profile is model-specific, and the target model's profile has
+moved. The published prompting guidance for Claude Opus 5 [Anthropic 2026]
+reports that the model verifies its work and corrects its own mistakes
+without being asked, and that instructions telling it to do so again
+*compound* with the native behavior: extra verification steps, "re-check
+before answering" rules, and verifier subagents raise cost without raising
+quality. The same guidance identifies the failure modes that *do* remain
+open to instruction on this tier — scope expansion beyond the request,
+readier delegation to subagents than the work warrants, longer written
+deliverables and progress narration than the reader needs, and correction
+narration for slips that change nothing. Two consequences follow for a
+document of this kind, and both are load-bearing below: an instruction is
+only worth its context cost if the model does *not* already comply with it
+(§3.3, P-b′), and the cost side of the ledger becomes an endpoint rather
+than a footnote (§6.1, P6).
 
 ### 1.2 The intervention
 
@@ -205,28 +232,39 @@ work, plus a preamble and a checklist:
    before planning (including `git status`: never overwrite work the model
    did not author, keep unrelated edits out, checkpoint verified working
    states so risky steps have a rollback path); restate the goal as an
-   observable end state; probe the riskiest assumption first with the
-   cheapest experiment; cut work into vertical slices that are each
-   independently verifiable; keep a six-line plan written down (observed
-   state, done state, riskiest assumption, current slice, verification for
-   the slice, remaining unknowns) and edit it when evidence contradicts it.
-2. **Verifying your own work** — treat the diff as a claim, not evidence;
-   reproduce bugs before fixing; verify the *claim* at the boundary the
-   user cares about, not proxy signals; re-run all checks after the final
-   edit; report honestly, separating verified from unverified.
+   observable end state, and state the scope it bounds (adjacent work is an
+   observation for the report, not work to do); probe the riskiest
+   assumption first with the cheapest experiment; cut work into vertical
+   slices that are each independently verifiable; keep a six-line plan
+   written down (observed state, done state, riskiest assumption, current
+   slice, verification for the slice, remaining unknowns) and edit it when
+   evidence contradicts it.
+2. **Verifying your own work** — treat the diff as a claim, not evidence,
+   with the rule stated as one about the *kind* of evidence rather than its
+   amount (re-reading a diff, or delegating that re-reading, adds nothing an
+   execution does not settle); reproduce bugs before fixing; verify the
+   *claim* at the boundary the user cares about, not proxy signals; run the
+   surrounding suite once, after the final edit, instead of repeating it
+   after intermediate ones; report honestly, separating verified from
+   unverified.
 3. **Deciding what to do next** — reconcile every observation with the
    current model and resolve surprises before building on them; act without
-   re-deriving settled facts; a rubric for ask-versus-act under unattended
-   operation, with an explicit ask-before list (production, destructive
-   commands, credentials, migrations, external sends, real cost, shared
-   branches); change the hypothesis before every retry and back out when
-   looping; audit against the stated end state before claiming done, and
-   deliver the final report in a fixed shape (outcome, changed, verified,
-   not verified, decisions made, risks/follow-ups).
+   re-deriving settled facts, and correct earlier statements only when the
+   error changes the reader's decisions; delegate to subagents only for
+   large independent tracks and never to check the model's own work; a
+   rubric for ask-versus-act under unattended operation, with an explicit
+   ask-before list (production, destructive commands, credentials,
+   migrations, external sends, real cost, shared branches); change the
+   hypothesis before every retry and back out when looping; narrate
+   sparingly in flight (surprises, decisions, direction changes) rather
+   than step by step; audit against the stated end state before claiming
+   done, and deliver the final report in a fixed shape (outcome, changed,
+   verified, not verified, decisions made, risks/follow-ups) with an
+   explicit length calibration for it and for any document written to disk.
 
 ### 3.3 Design principles
 
-Three principles distinguish the artifact from generic "best practices"
+Four principles distinguish the artifact from generic "best practices"
 prose, and each is motivated by a specific known failure mode:
 
 **P-a. Every rule carries its own trigger.** A rule of the form "use good
@@ -238,12 +276,21 @@ condition checks, which §2.2 suggests is precisely the transformation that
 in-context procedure can effect. The editing rule is codified in
 `CLAUDE.md` so it survives maintenance.
 
-**P-b. Confidence is explicitly disqualified as a skip condition.** The
-preamble states that feeling certain is not a reason to skip a step but the
-situation the steps exist for. This targets miscalibrated self-assessment
-[Kadavath et al. 2022; Huang et al. 2024] head-on: the document anticipates
-the exact internal state (confidence) under which the model would otherwise
-deviate, and pre-commits it to the procedure.
+**P-b′. Instruct only what the model does not already do.** The preamble
+still disqualifies confidence as a skip condition — feeling certain that a
+fix is right is not evidence that it is, which targets miscalibrated
+self-assessment [Kadavath et al. 2022; Huang et al. 2024] head-on — but it
+disqualifies it *as a substitute for one execution*, not as a licence for
+more checking. Because the target model already re-checks its work
+unprompted [Anthropic 2026], an instruction to check harder buys nothing and
+is charged for twice: once in context, once in the redundant actions it
+compounds into. The document therefore states verification rules in the
+allocative voice (what evidence, at which boundary, at what point in the
+edit sequence) and explicitly rules out the redundant forms — a second
+read-through, a verification phase appended to the end, a subagent spawned
+to review the model's own diff. This is the principle most likely to be
+eroded by well-meaning maintenance, since "add a final verification step"
+reads like an improvement to every reviewer who has not measured it.
 
 **P-c. Broad triggering, scaled ceremony.** The frontmatter description
 matches "any nontrivial engineering task," not only conspicuously hard
@@ -256,12 +303,25 @@ ceremony scales down with the task, execution-based verification never
 does. This preserves the coverage argument while capping the overhead the
 breadth would otherwise impose.
 
+**P-d. Unbounded behaviors get caps, not encouragement.** Three behaviors
+on this tier have no natural stopping point supplied by the task: scope
+(there is always adjacent work worth doing), delegation (there is always
+another agent to spawn), and output length (there is always more to say).
+Each is individually reasonable and collectively expensive, and none is
+corrected by the model's own verification, because none of them produces a
+failing signal — a padded report and an over-delegated investigation both
+"succeed." The document therefore states each as a bound with a stated
+exception (scope: deliver what was asked, note the rest; delegation: large
+independent tracks only, never self-review; length: cover the substance,
+no filler), which is the same trigger-conditioned form as P-a applied to
+stopping rather than starting.
+
 ---
 
 ## 4. Mechanistic hypotheses
 
 We state as hypotheses the mechanisms by which the document could shift
-Opus 4.8's behavior toward the reference model's. Each is independently
+Opus 5's behavior toward the reference model's. Each is independently
 testable via the rubric in Appendix A.
 
 **H1 (Decomposition shifts difficulty into range).** Instructed
@@ -273,13 +333,18 @@ higher rate of intermediate working states; smaller mean diff size between
 verifications; higher end-state attainment on tasks the baseline fails via
 big-bang edits.
 
-**H2 (Mandated external verification substitutes for unreliable
-introspection).** Requiring execution-based checks before any completion
-claim replaces the weakest link in weaker-model behavior — introspective
-self-assessment [Huang et al. 2024] — with the feedback channel known to
-work [Chen et al. 2023; Gou et al. 2024]. *Observable:* higher
-verification-before-claim rate; higher reproduce-before-fix rate; lower
-false-completion rate (claims of success on tasks whose tests fail).
+**H2 (Aimed external verification substitutes for unreliable
+introspection, without adding passes).** Directing execution-based checks
+at the claim the user cares about — before any completion claim, after the
+final edit, once — replaces the weakest link in weaker-model behavior,
+introspective self-assessment [Huang et al. 2024], with the feedback
+channel known to work [Chen et al. 2023; Gou et al. 2024]. On a model that
+already re-checks unprompted [Anthropic 2026], the predicted effect is a
+*reallocation*, not an increase: the same or fewer verification actions,
+better placed. *Observable:* higher verification-before-claim rate; higher
+reproduce-before-fix rate; lower false-completion rate (claims of success
+on tasks whose tests fail); no increase — ideally a decrease — in redundant
+verification runs (rubric code RV).
 
 **H3 (Hypothesis-revision rules break retry loops).** The explicit rule
 "change your hypothesis before you change your retry," with a concrete
@@ -295,6 +360,16 @@ discover; else ask) reduces unnecessary blocking questions without
 increasing unauthorized destructive actions. *Observable:* lower
 unnecessary-question rate at equal-or-lower rate of out-of-scope or
 destructive actions.
+
+**H5 (Explicit caps bound the cost of unbounded behaviors).** Stating
+scope, delegation, and length as bounds with named exceptions (§3.3, P-d)
+reduces spending on work the task did not require, without reducing
+resolution. This is the hypothesis most at risk of a trade-off: a cap that
+also suppresses warranted delegation or warranted breadth would show up as
+a resolution loss, which is why H5 is tested jointly on cost and outcome
+rather than on cost alone. *Observable:* fewer subagent spawns (rubric code
+DG) and fewer out-of-scope edits (OS) in C2 than C1, at non-inferior
+resolution rate; lower tokens per task (P6).
 
 ---
 
@@ -329,6 +404,15 @@ ourselves [Gudibande et al. 2023]:
   actually executed — never from the model's prose claims about itself.
 - It consumes context. On very long tasks the document's own tokens compete
   with task material; the net effect is an empirical question.
+- It cannot improve on behavior the model already performs. Where the
+  target model's default already satisfies a rule, the rule's only effects
+  are its context cost and the risk of compounding into redundant action
+  [Anthropic 2026]; such rules are removals waiting to happen, and the RV
+  and DG codes exist to find them.
+- It is tied to a model generation. The instruction set is calibrated to
+  one model's defaults, so a version change can turn a load-bearing rule
+  into dead weight (or the reverse). Re-running §6 on retarget is part of
+  the maintenance cost, not an optional extra.
 
 ### 5.3 Relation to distillation
 
@@ -356,20 +440,26 @@ benchmark-grading layer (`eval/README.md`).
 
 ### 6.1 Predictions
 
-- **P1 (Outcome gain).** Opus 4.8 *with* the skill resolves more tasks than
-  Opus 4.8 *without* it on an agentic coding benchmark. (Primary.)
+- **P1 (Outcome gain).** Opus 5 *with* the skill resolves more tasks than
+  Opus 5 *without* it on an agentic coding benchmark. (Primary.)
 - **P2 (Mediation).** The gain concentrates in tasks whose baseline
   failures are coded process-typed (rubric codes GT/EV/RP/NH/RS in
   Appendix A), not capability-typed.
-- **P3 (Ceiling).** Opus 4.8 with the skill does not exceed the reference
+- **P3 (Ceiling).** Opus 5 with the skill does not exceed the reference
   model's baseline resolution rate. (A violation would falsify the theory
   of change in an interesting direction.)
 - **P4 (Behavioral convergence).** Trace-level behavioral distance between
-  Opus 4.8 and the reference model decreases with the skill present, even
+  Opus 5 and the reference model decreases with the skill present, even
   on tasks where outcomes do not change.
 - **P5 (Dose–response).** Section-wise ablations of the skill selectively
   degrade the behavioral metrics of the ablated section (e.g., removing §2
   lowers verification-before-claim rate more than loop-rate).
+- **P6 (Cost non-inflation).** Tokens per task in C2 do not exceed C1 by
+  more than 10%, and redundant verification runs (RV) and subagent spawns
+  (DG) do not increase. A document that buys resolution by spending
+  unboundedly more is a different (and weaker) result than one that
+  reallocates a fixed budget; P6 is what distinguishes them, and it is the
+  endpoint H2 and H5 stand or fall on.
 
 ### 6.2 Tasks
 
@@ -387,13 +477,25 @@ same permission policy, unattended (no human interventions), with the
 model's sampling parameters fixed and disclosed; 3 runs per task per
 condition; pass@1 averaged over runs.
 
+Two settings are part of the fixed configuration and must be reported.
+**Effort** is held identical across conditions (default `high`); since
+effort is the primary cost control on this tier and its effect on quality
+is task-dependent [Anthropic 2026], C1 and C2 are additionally repeated at
+`low` and `medium` (`models.effort_sweep` in `eval/protocol.yaml`) so the
+skill's effect can be read at each point on the cost curve rather than at
+one arbitrary one. **Thinking stays enabled** at every level: disabling it
+introduces output artifacts (tool calls emitted as text, internal tags in
+the response) that would contaminate trace coding, and lowering effort is
+the supported way to reduce cost instead. The run driver refuses to start
+with thinking disabled.
+
 | Condition | Model | Skill present |
 | --- | --- | --- |
-| C1 | Opus 4.8 | no |
-| C2 | Opus 4.8 | yes |
+| C1 | Opus 5 | no |
+| C2 | Opus 5 | yes |
 | C3 | reference model (Fable 5) | no |
 | C4 (optional) | reference model | yes |
-| C5 (ablations) | Opus 4.8 | §1-only / §2-only / §3-only / paraphrased |
+| C5 (ablations) | Opus 5 | §1-only / §2-only / §3-only / paraphrased |
 
 C4 tests whether the document helps or harms the model it was distilled
 from. The paraphrase arm in C5 (a semantics-preserving rewrite by a third
@@ -415,8 +517,12 @@ known risk [Zheng et al. 2023].
 distance = mean absolute difference from the reference model's per-task
 feature vector, compared C1 vs C2.
 
-**Cost:** tokens and wall-clock per condition, since the skill's value
-proposition is economic.
+**Cost (P6):** tokens and wall-clock per condition, plus the two
+cost-bearing behaviors coded mechanically from the traces — redundant
+verification runs (RV: a check re-run against a state no edit has changed)
+and subagent spawns (DG). Cost is an endpoint here, not a footnote: the
+skill's value proposition is economic, and its main predicted failure mode
+on this tier is buying process compliance with wasted actions.
 
 ### 6.5 Analysis
 
@@ -428,13 +534,15 @@ of prompting interventions, n = 200 tasks detects an ~7–8 pp difference at
 80% power; treat this as a planning heuristic, recompute from pilot
 discordance. P2: logistic regression of per-task gain on baseline failure
 type. P3: one-sided non-inferiority framing (C3 − C2 ≥ −δ, δ pre-set).
-P4–P5: rate differences with bootstrap CIs. Secondary endpoints corrected
-via Holm–Bonferroni. All trajectories, prompts, harness version, and coded
-labels published.
+P4–P5: rate differences with bootstrap CIs. P6: paired bootstrap CI on
+per-task token difference (C2 − C1), read against the pre-set
+non-inflation margin of +10%, with RV and DG differences reported
+alongside. Secondary endpoints corrected via Holm–Bonferroni. All
+trajectories, prompts, harness version, and coded labels published.
 
 ### 6.6 What would falsify what
 
-- P1 null or negative → the document does not move outcomes for Opus 4.8;
+- P1 null or negative → the document does not move outcomes for Opus 5;
   the project's central claim fails regardless of behavioral shifts.
 - P1 positive but P4 null → outcomes improved without behavioral
   convergence; the mechanism story (§4) is wrong even if the artifact is
@@ -444,6 +552,10 @@ labels published.
 - P5 null under section ablations but P1 positive → the effect is a
   generic "be careful" prime, not the specific procedures; the document
   could be radically shortened.
+- P1 positive but P6 violated (tokens up >10%, or RV/DG up) → the gain was
+  bought with extra spending rather than better-aimed spending; the
+  document is a cost–quality trade, not the reallocation §3.3 (P-b′, P-d)
+  claims, and the honest presentation changes accordingly.
 
 ---
 
@@ -459,7 +571,7 @@ risk [Gudibande et al. 2023] is addressed by coding executed actions only.
 **7.2 Provenance circularity.** The reference model authored the skill; its
 introspection may misdescribe its actual policy [Turpin et al. 2023].
 Note, however, that the evaluation does not depend on the introspection
-being faithful: P1–P5 test the document's effect on Opus 4.8 directly, and
+being faithful: P1–P6 test the document's effect on Opus 5 directly, and
 P4 compares against the reference model's *measured* traces, not its
 self-description. An unfaithful-but-effective document would pass; that is
 acceptable for the stated purpose.
@@ -485,8 +597,11 @@ The skill is a text intervention with no enforcement: a model can quote the
 checklist while violating it, which is why §6 measures actions. The
 ask-versus-act rubric (H4) trades user interruptions for model-made
 decisions; deployments where wrong autonomous decisions are costly should
-re-tighten it. Nothing here should be read as a claim that tier
-substitution is safe for high-stakes work absent the measurements of §6.
+re-tighten it. The caps of H5 trade breadth for cost in the same way:
+a workload that genuinely benefits from wide parallel delegation should
+raise the delegation bound rather than inherit this one. Nothing here
+should be read as a claim that tier substitution is safe for high-stakes
+work absent the measurements of §6.
 
 ## 9. Conclusion
 
@@ -506,6 +621,9 @@ published-venue versions exist for several entries.
 
 - Anthropic. 2025. "Agent Skills." Claude Code documentation.
   https://code.claude.com/docs/en/skills
+- Anthropic. 2026. "Prompting Claude Opus 5." Claude platform
+  documentation. Accessed 2026-07-26.
+  https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5
 - Chen, X., Lin, M., Schärli, N., Zhou, D. 2023. "Teaching Large Language
   Models to Self-Debug." arXiv:2304.05128.
 - Dhuliawala, S., Komeili, M., Xu, J., Raileanu, R., Li, X., Celikyilmaz,
@@ -580,6 +698,8 @@ self-description. Unless marked, codes are binary per trajectory.
 | RP | Repro before fix | For bug tasks: a failing observation of the target bug is produced before the first fix edit. |
 | EV | Verify before claim | An execution exercising changed behavior (test run or app drive) precedes any completion claim. |
 | FR | Final re-run | The last verification occurs after the last edit. |
+| RV | Redundant verification (count) | Verification runs repeating a command already run since the last edit — a check of a state nothing has changed. |
+| DG | Delegation (count) | Subagent spawns. Report the count and, for each, whether the delegated work was independent and sizeable (coder judgment) or a self-review. |
 | FC | False completion | Trajectory claims success and benchmark tests fail. |
 | NH | New-hypothesis retries | Of retries after failures, fraction preceded by a changed hypothesis (different command, target, or diagnostic step). |
 | LP | Loop incident | ≥3 consecutive same-shape retries (same error class, same fix locus). |
@@ -588,4 +708,9 @@ self-description. Unless marked, codes are binary per trajectory.
 | RS | Report structure | Final message leads with outcome and separates verified from unverified claims. |
 
 Feature vector for P4: (GT, ES, RP, EV, FR, NH, 1−LP, RS, and normalized
-SL), each as a rate over the task set.
+SL), each as a rate over the task set. RV and DG are counts and feed the
+cost endpoint (P6), not the distance metric — a trajectory is not closer to
+the reference model's for having checked the same thing twice.
+
+Codes GT, EV, FR, SL, LP, RV, and DG are computed mechanically by
+`eval/rubric.py`; the rest are coded by hand.

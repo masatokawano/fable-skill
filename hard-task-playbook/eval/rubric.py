@@ -15,7 +15,7 @@ and completion-claim markers:
 
     {"type": "assistant_final", "ts": <float>}
 
-Mechanical codes implemented here: GT, EV (approximate), FR, SL, LP.
+Mechanical codes implemented here: GT, EV (approximate), FR, SL, LP, RV, DG.
 Judgment codes (ES, RA, RP, NH, AQ, OS, RS, FC) are emitted as NEEDS_CODER
 for the human/LLM coding pass; FC additionally needs outcome.json.
 
@@ -29,12 +29,14 @@ import sys
 
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 READ_TOOLS = {"Read", "Grep", "Glob"}
+# Subagent spawns, under the names the harness uses for them.
+DELEGATE_TOOLS = {"Agent", "Task"}
 # Heuristic: a Bash command counts as a verification run if it invokes a
 # test runner or executes project code. Extend per project under test.
 VERIFY_MARKERS = ("pytest", "python", "npm test", "npm run", "go test",
                   "cargo test", "make test", "make check", "tox")
 
-MECHANICAL = ["GT", "EV", "FR", "SL_cycles", "SL_max_lines", "LP"]
+MECHANICAL = ["GT", "EV", "FR", "SL_cycles", "SL_max_lines", "LP", "RV", "DG"]
 JUDGMENT = ["ES", "RA", "RP", "NH", "AQ_necessary", "AQ_unnecessary",
             "OS", "RS", "FC"]
 
@@ -105,8 +107,28 @@ def code_mechanical(events):
         streak = streak + 1 if shape(prev) == shape(cur) else 1
         if streak >= 3:
             lp = 1
+
+    # RV: redundant verification. A verification run that repeats a command
+    # already run since the last edit checks a state nothing has changed.
+    rv, seen_since_edit = 0, set()
+    for e in events:
+        if e.get("type") != "tool":
+            continue
+        if e.get("name") in EDIT_TOOLS:
+            seen_since_edit.clear()
+        elif is_verify(e):
+            cmd = (e.get("input") or {}).get("command", "")
+            if cmd in seen_since_edit:
+                rv += 1
+            else:
+                seen_since_edit.add(cmd)
+
+    # DG: subagent spawns.
+    dg = sum(1 for e in events if e.get("type") == "tool"
+             and e.get("name") in DELEGATE_TOOLS)
+
     return {"GT": gt, "EV": ev_code, "FR": fr, "SL_cycles": cycles,
-            "SL_max_lines": max_lines, "LP": lp}
+            "SL_max_lines": max_lines, "LP": lp, "RV": rv, "DG": dg}
 
 
 def self_test():
@@ -136,6 +158,23 @@ def self_test():
     r = code_mechanical([read("c.py"), read("c.py"), read("c.py"),
                          edit("c.py"), final, bash("pytest")])
     assert (r["LP"], r["EV"], r["FR"]) == (0, 0, 1), r
+
+    # RV: the second identical test run without an intervening edit is
+    # redundant; the same command after an edit is not.
+    redundant = code_mechanical([read("f.py"), edit("f.py"), bash("pytest"),
+                                 bash("pytest"), bash("pytest"), final])
+    assert redundant["RV"] == 2, redundant
+    paced = code_mechanical([read("f.py"), edit("f.py"), bash("pytest"),
+                             edit("f.py"), bash("pytest"), final])
+    assert paced["RV"] == 0, paced
+
+    # DG: subagent spawns are counted, other tools are not.
+    delegated = code_mechanical([
+        {"type": "tool", "name": "Agent", "input": {"prompt": "investigate"}},
+        {"type": "tool", "name": "Task", "input": {"prompt": "verify"}},
+        read("g.py"), final])
+    assert delegated["DG"] == 2, delegated
+    assert code_mechanical([read("g.py"), final])["DG"] == 0
 
     # Edit-only trajectory: GT=0, FR=0; no-edit trajectory: GT=1, FR=1.
     assert code_mechanical([edit("d.py"), final])["FR"] == 0

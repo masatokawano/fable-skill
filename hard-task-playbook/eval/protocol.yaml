@@ -2,7 +2,7 @@
 # Normative prose: ../docs/design-rationale.md §6. Freeze before data
 # collection; any post-freeze change must be logged under `amendments`.
 
-version: 1
+version: 2               # v2: retargeted from Opus 4.8 to Opus 5
 frozen: false            # set true (and commit) before collecting data
 amendments: []
 
@@ -11,11 +11,13 @@ artifact:
   skill_git_commit: null  # fill with the commit hash under test
 
 models:
-  weaker: claude-opus-4-8
+  weaker: claude-opus-5
   reference: null         # fill with the reference model's API identifier
   sampling:               # fix and disclose; identical across conditions
     temperature: null
-    max_thinking: null
+    thinking: enabled     # on by default for Opus 5; do not disable (§6.3)
+    effort: high          # model default; effort_sweep reports the others
+  effort_sweep: [low, medium, high]  # C1/C2 repeated at each level (§6.3)
 
 tasks:
   primary:
@@ -54,6 +56,8 @@ endpoints:
     - {id: P3, measure: C3_minus_C2_noninferiority, delta: 0.05}
     - {id: P4, measure: behavioral_distance_reduction, test: paired_bootstrap_10000}
     - {id: P5, measure: sectionwise_ablation_selectivity, test: paired_bootstrap_10000}
+    - {id: P6, measure: cost_per_task_C2_minus_C1, test: paired_bootstrap_10000,
+       direction: non_inflation, delta_tokens_fraction: 0.10}
 
 trace_coding:
   source: tool_call_logs_only   # never the model's prose self-description
@@ -63,5 +67,7 @@ trace_coding:
   rubric: appendix_A_v1
 
 reporting:
-  publish: [trajectories, coded_labels, prompts, harness_version, costs]
-  costs: [tokens_per_condition, wall_clock_per_condition]
+  publish: [trajectories, coded_labels, prompts, harness_version, costs,
+            effort_level, thinking_setting]
+  costs: [tokens_per_condition, wall_clock_per_condition,
+          subagent_spawns_per_condition]
